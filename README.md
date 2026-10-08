@@ -1,4 +1,4 @@
-# 🧊 Smart Fridge & Nutrition Coach <a href="../README.md"><img src="https://img.shields.io/badge/🌍%20English%20Version-blue?style=for-the-badge" alt="English version" align="right" style="position:relative; top:4px;"></a>
+# 🧊 Smart Fridge & Nutrition Coach <a href="docs/README.md"><img src="https://img.shields.io/badge/🌍%20English%20Version-blue?style=for-the-badge" alt="English version" align="right"></a>
 
 Concevoir et développer de zéro une application web fullstack complète de coaching nutritionnel intelligent.
 
