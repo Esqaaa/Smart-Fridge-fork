@@ -1,4 +1,5 @@
-# 🧊 Smart Fridge & Nutrition Coach 
+# 🧊 Smart Fridge & Nutrition Coach <a href="../README.md"><img src="https://img.shields.io/badge/🌍%20English%20Version-blue?style=for-the-badge" alt="English version" align="right" style="position:relative; top:4px;"></a>
+
 Concevoir et développer de zéro une application web fullstack complète de coaching nutritionnel intelligent.
 
 ## 📌 Présentation du Projet
@@ -26,6 +27,8 @@ Smart-Fridge
 │   ├── templates
 │   ├── utils
 │   └── __init__.py
+├── docs 
+│   ├── ADR.md
 ├── tests
 ├── config.py
 ├── database.py
@@ -43,6 +46,7 @@ Smart-Fridge
 * `app/static/` Fichiers statiques
 * `app/templates/` Templates Jinja2 
 * `app/utils/` Fonctions utilitaires
+* `docs/` Documentation 
 * `config.py` Chargement des variables d’environnement
 * `database.py` Connexion à Supabase
 * `json_store.py` Stockage local des ingrédients
@@ -120,7 +124,142 @@ SUPABASE_URL=...
 SUPABASE_KEY=...
 ```
 
-### 4. Lancer le serveur FastAPI 
+## 📦 Usage
+
+### 1. Authentification
+#### ➤ Inscription  
+**POST** `/auth/register`
+```json
+{
+  "email": "user@example.com",
+  "password": "monmotdepasse"
+}
+```
+
+#### ➤ Connexion  
+**POST** `/auth/login`
+```json
+{
+  "email": "user@example.com",
+  "password": "monmotdepasse"
+}
+```
+
+Réponse :
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+Ce token doit être ajouté dans les requêtes suivantes :  
+`Authorization: Bearer <token>`
+
+### 2. Profil Métabolique
+
+#### ➤ Définir son profil  
+**POST** `/profile/`
+```json
+{
+  "weight": 72,
+  "height": 178,
+  "age": 24,
+  "sex": "male",
+  "activity": "moderate",
+  "goal": "maintain"
+}
+```
+
+L’API calcule automatiquement :  
+- Le **BMR** (Mifflin-St Jeor)  
+- Le **TDEE**  
+- La répartition des **macronutriments** selon l’objectif  
+
+### 3. Gestion du Frigo
+
+#### ➤ Ajouter un ingrédient  
+**POST** `/fridge/add`
+```json
+{
+  "name": "tomato"
+}
+```
+
+#### ➤ Supprimer un ingrédient  
+**DELETE** `/fridge/remove/tomato`
+
+#### ➤ Voir le contenu du frigo  
+**GET** `/fridge/`
+
+Réponse :
+```json
+{
+  "ingredients": ["tomato", "rice", "chicken"]
+}
+```
+
+### 4. Suggestions de Recettes
+
+#### ➤ Obtenir des suggestions basées sur les ingrédients du frigo  
+**GET** `/recipes/suggestions`
+
+Réponse :
+```json
+{
+  "recipes": [
+    {
+      "name": "Chicken Fried Rice",
+      "score": 0.87,
+      "ingredients_found": 3
+    }
+  ]
+}
+```
+
+Le moteur :  
+- Interroge **TheMealDB**  
+- Normalise les ingrédients  
+- Interroge **USDA** pour les valeurs nutritionnelles  
+- Calcule un **score de pertinence**  
+
+### 5. Détails d’une Recette
+
+#### ➤ Voir une recette en détail  
+**GET** `/recipes/<id>`
+
+Réponse :
+```json
+{
+  "name": "Tomato Pasta",
+  "ingredients": [
+    {"name": "tomato", "quantity": "2"},
+    {"name": "pasta", "quantity": "200g"}
+  ],
+  "nutrition": {
+    "calories": 420,
+    "protein": 12,
+    "carbs": 70,
+    "fat": 8
+  },
+  "instructions": "Boil pasta, cook tomatoes..."
+}
+```
+
+### 6. Interface Web
+
+Une fois le serveur lancé :  
+[http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+L’interface permet :  
+- Connexion / inscription  
+- Gestion du profil  
+- Gestion du frigo  
+- Suggestions de recettes  
+- Consultation détaillée des plats  
+- Navigation fluide entre les sections  
+
+## 🚀 Lancement du serveur  
 ```bash
 uvicorn app.main:app --reload
 ```
@@ -178,6 +317,37 @@ Dans le cadre de ce projet, nous avons adopté une approche dynamique et respons
 
 --> Cette vue permet à l'utilisateur de passer directement de la gestion de ses aliments à leur utilisation grâce à des recettes adaptées aux ingrédients disponibles. </br>
 
+## ⚠️ Limites de l’Application
+
+Malgré son architecture solide, **Smart Fridge & Nutrition Coach** présente plusieurs limites techniques liées aux APIs externes, aux données nutritionnelles et aux approximations nécessaires pour les calculs.
+
+### 1. Limites des APIs externes (TheMealDB & USDA)
+- **Latence variable** : certaines requêtes peuvent dépasser 300–500 ms, surtout côté USDA.  
+- **Dépendance réseau** : en cas de lenteur ou d’indisponibilité, les suggestions et données nutritionnelles deviennent inaccessibles.  
+- **Quotas journaliers** : USDA limite le nombre de requêtes par jour selon la clé API.  
+- **Données incomplètes** : TheMealDB fournit des ingrédients non standardisés, USDA peut manquer certains nutriments.
+
+### 2. Connexion réseau
+-- **Localhost** : Application non déployée 
+
+### 3. Perte de précision dans les calculs
+- **Arrondis obligatoires** (BMR, TDEE, macros) → légère perte de précision (<5%).  
+- **Conversions approximatives** : les unités comme *“1 tbsp”*, *“1 tsp”*, *“1 handful”* ne correspondent pas à des quantités nutritionnelles exactes.  
+- **Quantités manquantes dans TheMealDB** : les recettes n’indiquent pas les grammes → estimation nécessaire.
+
+### 4. Limites du moteur de suggestions
+- **Matching lexical imparfait** : “chicken”, “chicken breast”, “chicken cooked” → valeurs USDA différentes.  
+- **Portions estimées** : faute de quantités précises, les calories et macros sont approximatives.  
+- **Score de pertinence non scientifique** : cohérent, mais dépend fortement de la qualité des données externes.
+
+### 5. Limites liées au frigo et au stockage
+- **Normalisation imparfaite** : ingrédients complexes ou régionaux peuvent être mal interprétés.  
+- **Latence Supabase** : mise à jour parfois légèrement retardée (1–2 secondes).
+- **Quantité** : stocker la quantité d'aliment 
+
+## 6. Limites du modèle métabolique
+- **Formule Mifflin-St Jeor** : fiable mais reste une approximation statistique.  
+- **Objectifs simplifiés** : perte / maintien / prise → pas de personnalisation avancée (pathologies, métabolisme atypique, etc.).
 
 ## 👥 Licence & Collaborateurs
 * **Libre d'accès et d'apprentissage :** Vous êtes libres de consulter le code, de le forker et de proposer des améliorations.
@@ -186,5 +356,3 @@ Dans le cadre de ce projet, nous avons adopté une approche dynamique et respons
 * **Usage commercial strictement interdit :** Aucune réutilisation, revente ou exploitation commerciale (directe ou indirecte) du code et du projet n'est autorisée.
 
 [Loschoe](https://github.com/loschoe) [Esqaaa](https://github.com/Esqaaa)
-
-
